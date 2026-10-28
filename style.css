@@ -349,10 +349,28 @@ body.is-dark .film-grain {
 }
 
 .nav-audio__tip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
   font: 400 10px/1.2 var(--f-label);
   letter-spacing: .04em;
   color: var(--ink);
   white-space: nowrap;
+  cursor: pointer;
+  transition: opacity .2s;
+}
+
+.nav-audio__tip::after {
+  content: '↻';
+  font-size: 10px;
+  color: var(--mute);
+  transition: transform .28s var(--ease), color .2s;
+}
+
+.nav-audio__tip:hover::after {
+  color: var(--ink);
+  transform: rotate(120deg);
 }
 
 .nav-audio__vol-wrap {
@@ -362,9 +380,11 @@ body.is-dark .film-grain {
 }
 
 .nav-audio__vol-icon {
+  min-width: 28px;
   font: 400 8.5px/1 var(--f-label);
-  letter-spacing: .08em;
+  letter-spacing: .06em;
   color: var(--mute);
+  cursor: pointer;
 }
 
 .nav-audio__vol {
@@ -597,12 +617,116 @@ body.is-dark .sites__popup {
 }
 
 .hero__title img.is-switching,
+.hero__title img.is-stage-1,
 .about__name img.is-switching {
-  animation: logoSwitch .32s var(--ease) both;
+  animation: logoSwitch .26s var(--ease) both;
+}
+
+.hero__title img.is-stage-2 {
+  animation: logoStage2 .36s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+.hero__title img.is-stage-3 {
+  animation: logoStage3 .46s cubic-bezier(.36, .07, .19, .97) both;
 }
 
 .hero__title img.is-tremor {
   animation: logoTremor .58s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+@keyframes logoStage2 {
+  0% {
+    opacity: .35;
+    transform: translate(-2.5px, .5px) skewX(-2deg) scale(.97);
+  }
+  35% {
+    opacity: .9;
+    transform: translate(2px, -.5px) skewX(1.8deg) scale(1.01);
+  }
+  70% {
+    transform: translate(-1px, 0) skewX(-.8deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) skewX(0) scale(1);
+  }
+}
+
+@keyframes logoStage3 {
+  0% {
+    opacity: .3;
+    transform: translate(-4.5px, 1px) skewX(-4deg) scale(.96);
+  }
+  25% {
+    opacity: .95;
+    transform: translate(4px, -1px) skewX(3.5deg) scale(1.02);
+  }
+  50% {
+    transform: translate(-3px, 1px) skewX(-2.5deg);
+  }
+  75% {
+    transform: translate(1.5px, -.5px) skewX(1.2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) skewX(0) scale(1);
+  }
+}
+
+.hero__now {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(25, 25, 28, .72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  font: 400 10.5px/1.2 var(--f-label);
+  letter-spacing: .05em;
+  color: var(--mute);
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity .35s var(--ease), transform .35s var(--ease);
+}
+
+.hero__now[hidden] {
+  display: none;
+}
+
+.hero__now.is-out {
+  opacity: 0;
+  transform: translate(-50%, 3px);
+}
+
+.hero__now-ch {
+  display: inline-block;
+  color: var(--mute);
+  animation: charBlinkIn .36s steps(2, end) var(--d, 0ms) both;
+}
+
+.hero__now-ch.is-title {
+  color: var(--ink-2);
+}
+
+@keyframes charBlinkIn {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .12;
+  }
+  75% {
+    opacity: .9;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 body.is-dark .topbar__logo img,
@@ -669,12 +793,13 @@ body.is-dark .footer img {
 }
 
 .section+.section>.container::before {
-  /* 섹션 구분선 */
+  /* 섹션 구분선 (모든 섹션에서 동일한 --narrow 폭으로 통일) */
   content: '';
   position: absolute;
   top: -64px;
-  left: var(--gutter);
-  right: var(--gutter);
+  left: 50%;
+  width: min(var(--narrow), calc(100% - var(--gutter) * 2));
+  transform: translateX(-50%);
   height: 1px;
   background: var(--line);
 }
@@ -829,6 +954,10 @@ body.is-dark .footer img {
   transform: translateX(4px);
 }
 
+.more.is-shaking {
+  animation: nudge .4s cubic-bezier(.36, .07, .19, .97);
+}
+
 /* 언어 토글 */
 .lang {
   --i: 0;
@@ -910,14 +1039,20 @@ body.is-dark .placeholder {
   z-index: 1;
   transform: perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1);
   transform-style: preserve-3d;
-  transition: transform .22s var(--ease), z-index 0s .35s;
+  transition: transform .22s var(--ease), filter .32s var(--ease), opacity .32s var(--ease), z-index 0s .35s;
 }
 
 .card:hover,
 .card:focus-within {
   z-index: 10;
   transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(1.045);
-  transition: transform .14s ease-out, z-index 0s;
+  transition: transform .14s ease-out, filter .25s var(--ease), opacity .25s var(--ease), z-index 0s;
+}
+
+/* 카드에 커서가 올라가면 나머지 카드들은 살짝 블러 처리 */
+.grid:has(.card:hover) .card:not(:hover) {
+  filter: blur(2.2px);
+  opacity: .72;
 }
 
 .card__inner {
@@ -975,11 +1110,38 @@ body.is-dark .placeholder {
   opacity: 1;
 }
 
+.card__overlay-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .card__overlay-no {
   font: 400 10.5px/1 var(--f-label);
   color: rgba(255, 255, 255, .82);
   letter-spacing: .08em;
   text-shadow: 0 1px 4px rgba(0, 0, 0, .4);
+}
+
+.card__overlay-tag {
+  padding: 4px 8px 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .92);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #111;
+  border: 1px solid rgba(0, 0, 0, .12);
+  font: 400 9px/1 var(--f-label);
+  letter-spacing: .1em;
+  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, .25);
+  transform: translateY(-3px) scale(.96);
+  transition: transform .28s var(--ease);
+}
+
+.card:hover .card__overlay-tag,
+.card__inner:focus-visible .card__overlay-tag {
+  transform: translateY(0) scale(1);
 }
 
 .card__open {
@@ -1110,7 +1272,7 @@ body.is-dark .placeholder {
 /* waveroad 모드: 음악/릴리즈(Release) 작업이 은은하게 먼저 돋보이도록 */
 body.is-waveroad .card:not([data-tag="Release"]):not(:hover) {
   opacity: .56;
-  filter: saturate(.78);
+  filter: blur(1.8px) saturate(.78);
   transition: opacity .4s var(--ease), filter .4s var(--ease), transform .22s var(--ease);
 }
 
@@ -1119,25 +1281,6 @@ body.is-waveroad .card[data-tag="Release"] .card__face {
   box-shadow:
     0 0 0 1px rgba(17, 17, 17, .14),
     0 16px 34px -14px rgba(0, 0, 0, .28);
-}
-
-body.is-waveroad .card[data-tag="Release"] .card__front::after {
-  content: '♪ RELEASE';
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  padding: 4px 8px 3px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, .9);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  color: #111;
-  border: 1px solid rgba(0, 0, 0, .12);
-  font: 400 9px/1 var(--f-label);
-  letter-spacing: .1em;
-  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, .25);
-  pointer-events: none;
-  animation: audioPop .35s var(--ease) both;
 }
 
 /* ---------- 카드 클릭 → 트레이 ---------- */
@@ -1628,12 +1771,12 @@ body.is-dark .tray__backdrop {
 }
 
 .card.reveal.is-in {
-  transition: opacity .8s var(--ease), transform .22s var(--ease), z-index 0s .35s;
+  transition: opacity .32s var(--ease), filter .32s var(--ease), transform .22s var(--ease), z-index 0s .35s;
 }
 
 .card.reveal.is-in:hover,
 .card.reveal.is-in:focus-within {
-  transition: transform .14s ease-out, z-index 0s;
+  transition: opacity .25s var(--ease), filter .25s var(--ease), transform .14s ease-out, z-index 0s;
 }
 
 /* ---------- 모바일 ---------- */
