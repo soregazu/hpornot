@@ -74,7 +74,7 @@
       const hw = Rx * Math.cos(lat * RAD);
       const l = latLines[i];
       l.setAttribute('x1', cx - hw); l.setAttribute('x2', cx + hw);
-      l.setAttribute('y1', y);       l.setAttribute('y2', y);
+      l.setAttribute('y1', y); l.setAttribute('y2', y);
     });
   }
 
@@ -190,6 +190,8 @@
   const baseSpeed = 360 / (cfg.secondsPerTurn * 1000) * (reduce ? 0.25 : 1);
   let targetDir = 1;
   let currentDir = 1;
+  let targetSpeedMult = 1;
+  let currentSpeedMult = 1;
   let rot = 0, last = performance.now();
 
   // 외부에서 지구본 회전 방향 제어 (1: 정방향, -1: 역방향)
@@ -197,22 +199,36 @@
     targetDir = reversed ? -1 : 1;
   };
 
+  // 외부에서 지구본 회전 배속 제어 (0: 정지, 1: 기본, >1: CD/테이프 재생 가속)
+  window.setGlobeSpeedMult = function (mult) {
+    const n = Number(mult);
+    targetSpeedMult = Number.isFinite(n) ? Math.max(0, n) : 1;
+  };
+
   /* ---------- 좌우 드래그 회전 (관성 + sonohoka 턴테이블 스크러빙) ---------- */
+  const PLAY_BASE_MULT = 8.8;
   let dragging = false;
   let dragLastX = 0;
-  let dragVel = 0; // deg per ms
+  let dragVel = 0;       // deg per ms (손을 뗀 뒤 관성)
+  let dragOmega = 0;     // deg per ms (잡고 돌리는 중의 각속도)
+  let grabSlipOmega = 0; // deg per ms (잡는 순간 0.05~0.1초간 마찰로 미끄러지며 멈추는 각속도)
   let lastMoveTime = 0;
 
   hero.addEventListener('pointerdown', (e) => {
     if (e.target.closest('#hero-logo-btn')) return;
+    // 잡는 순간의 회전 속도를 물려받아 0.05~0.1초 동안 마찰 제동(Slip-Brake)
+    grabSlipOmega = baseSpeed * currentDir * currentSpeedMult + dragVel;
+    const speedMag = Math.abs(grabSlipOmega) / baseSpeed;
     dragging = true;
     dragLastX = e.clientX;
     dragVel = 0;
+    dragOmega = 0;
     lastMoveTime = performance.now();
     hero.classList.add('is-dragging');
-    try { hero.setPointerCapture(e.pointerId); } catch (_) {}
+
+    try { hero.setPointerCapture(e.pointerId); } catch (_) { }
     if (window.GlobeAudio && typeof window.GlobeAudio.onGrab === 'function') {
-      window.GlobeAudio.onGrab();
+      window.GlobeAudio.onGrab(speedMag);
     }
   });
 
@@ -224,17 +240,18 @@
     const now = performance.now();
     const dtMove = Math.max(8, now - lastMoveTime);
     lastMoveTime = now;
+    grabSlipOmega *= 0.25;
     const degDelta = (dx / Math.max(300, W)) * 150;
     rot = (rot + degDelta + 3600) % 360;
-    dragVel = degDelta * 0.06;
-    if (window.GlobeAudio && typeof window.GlobeAudio.onScrub === 'function') {
-      window.GlobeAudio.onScrub(degDelta, dtMove);
-    }
+    const instOmega = degDelta / dtMove;
+    dragOmega = dragOmega * 0.35 + instOmega * 0.65;
+    dragVel = dragOmega * 0.65;
   });
 
   const endDrag = () => {
     if (!dragging) return;
     dragging = false;
+    grabSlipOmega = 0;
     hero.classList.remove('is-dragging');
     if (window.GlobeAudio && typeof window.GlobeAudio.onRelease === 'function') {
       window.GlobeAudio.onRelease(dragVel);
@@ -251,18 +268,41 @@
     const dt = Math.min(64, now - last);
     last = now;
 
-    currentDir += (targetDir - currentDir) * Math.min(1, dt * 0.008);
+    currentDir += (targetDir - currentDir) * Math.min(1, dt * 0.0045);
 
+    let actualOmega = 0; // deg per ms
     if (!dragging) {
-      // 드래그 관성 감쇠 + 기본 자전
-      dragVel *= Math.pow(0.92, dt / 16);
-      const delta = dt * baseSpeed * currentDir + dragVel * dt;
-      rot = (rot + delta + 3600) % 360;
-    } else if (now - lastMoveTime > 65) {
-      // 지구본을 잡은 채 멈춰 있으면 턴테이블 브레이크 알림
-      if (window.GlobeAudio && typeof window.GlobeAudio.onHoldStill === 'function') {
-        window.GlobeAudio.onHoldStill(dt);
+      // 실제 테이프/턴테이블 모터처럼 서서히 가속·감속 (기존 대비 약 20% 빠르게 반응)
+      const speedRate = targetSpeedMult > currentSpeedMult ? 0.0021 : 0.00185;
+      currentSpeedMult += (targetSpeedMult - currentSpeedMult) * Math.min(1, dt * speedRate);
+      if (targetSpeedMult === 0 && currentSpeedMult < 0.015) currentSpeedMult = 0;
+
+      // 드래그 관성 감쇠 + 모터 자전
+      dragVel *= Math.pow(0.93, dt / 16);
+      if (Math.abs(dragVel) < 1e-5) dragVel = 0;
+      actualOmega = baseSpeed * currentDir * currentSpeedMult + dragVel;
+      rot = (rot + actualOmega * dt + 3600) % 360;
+    } else {
+      // 손으로 잡는 순간 0.05~0.1초 동안 마찰로 살짝 밀리다가 '턱' 멈추는 물리 제동
+      grabSlipOmega *= Math.pow(0.36, dt / 16);
+      if (Math.abs(grabSlipOmega) < 1e-4) grabSlipOmega = 0;
+      if (grabSlipOmega !== 0) {
+        rot = (rot + grabSlipOmega * dt + 3600) % 360;
       }
+
+      currentSpeedMult *= Math.pow(0.62, dt / 16);
+      if (now - lastMoveTime > 42) {
+        dragOmega *= Math.pow(0.65, dt / 16);
+        dragVel *= Math.pow(0.65, dt / 16);
+        if (Math.abs(dragOmega) < 1e-4) dragOmega = 0;
+      }
+      actualOmega = grabSlipOmega + dragOmega;
+    }
+
+    // 지구본의 실제 회전 속도 비율(sonohoka 정방향 1.0x 기준)을 오디오 엔진에 전달
+    if (window.GlobeAudio && typeof window.GlobeAudio.onFrame === 'function') {
+      const playRatio = -actualOmega / (baseSpeed * PLAY_BASE_MULT);
+      window.GlobeAudio.onFrame(playRatio, dt, dragging);
     }
 
     if (!reduce && now >= nextSpawn) {
