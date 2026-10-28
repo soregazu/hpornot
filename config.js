@@ -1,3 +1,7 @@
+/* ==========================================================
+   oh.tyn — 사이트 설정
+   콘텐츠/순서/링크는 전부 여기서 바꾸면 됩니다.
+   ========================================================== */
 window.SITE = {
 
   /* 섹션 순서. 빼고 싶은 섹션은 목록에서 지우면 숨겨집니다.
@@ -14,6 +18,11 @@ window.SITE = {
     { id: 'instagram', label: 'Instagram',     href: 'https://www.instagram.com/oh.tyn/', color: '#e1306c' },
   ],
 
+  /* sonohoka 모드 전용 상단 바 sites 팝업 */
+  sonohokaSites: [
+    { id: 'youtube',   label: 'YouTube',       href: 'https://www.youtube.com/@sonoyumeP', color: '#ff0033' },
+  ],
+
   /* 지구본 */
   globe: {
     meridians: 32,                        // 경도선 수 (앞면에는 절반인 16개가 보임)
@@ -26,7 +35,6 @@ window.SITE = {
   demos: [
     { title: 'demo 260904',            src: 'assets/audios/demo 260904.mp3' },
     { title: 'gosui',                  src: 'assets/audios/gosui.mp3' },
-    { title: 'okusuri cover nurserobo', src: 'assets/audios/okusuri cover nurserobo.mp3' },
   ],
 
   /* News — href에 링크를 넣으면 클릭 시 이동 */
@@ -62,6 +70,22 @@ window.SITE = {
     ],
   },
 
+  /* sonohoka 모드 전용 자기소개 (문단 배열, 기본 언어: JP) */
+  sonohokaAbout: {
+    jp: [
+      '2007年生まれ、新灘津（シンタンジン）出身。現在ソウル在住。<br>慶熙大学校地理学科在学。',
+      '「そのほかの夢 / sonoyumeP」名義でボカロPの活動を展開予定。<br>右上にて準備中の音源をご視聴いただけます。',
+    ],
+    en: [
+      'Born in 2007, from Sintanjin. Currently based in Seoul.<br>Attending the Department of Geography at Kyung Hee University.',
+      'Active as a Vocaloid producer under the name "sonohokanoyume/sonoyumeP(そのほかの夢)".<br>An unreleased preview track is available at the top right.',
+    ],
+    kr: [
+      '2007년생, 신탄진 출신. 현재 서울 거주.<br>경희대학교 지리학과 재학 중.',
+      '소노호카노유메/소노유메P 명의로 보카로P 활동을 전개할 예정이다.<br>오른쪽 위에서 준비중인 음원을 들어볼 수 있다.',
+    ],
+  },
+
   /* Works — assets/images/projects/<폴더>/<폴더>.md 내용 그대로
      no      : 카탈로그 번호 (클수록 최근 → 그리드 위쪽에 표시)
      folder  : 프로젝트 폴더 이름
@@ -71,6 +95,16 @@ window.SITE = {
      ※ 사진은 웹용으로 변환된 assets/images/web/<폴더>/ 를 사용합니다.
        새 사진을 넣었다면 tools/optimize-images.ps1 을 한 번 실행하세요. */
   works: [
+    {
+      no: 99, noLabel: '01S', folder: '01S okusuri cover', count: 1, ratio: '16/9',
+      images: ['assets/images/projects/01S okusuri cover/01S thumbnail.png'],
+      youtubeId: '6cUOrYDzHrI',
+      title: '【UTAUカバー】おくすり飲んで寝よう【ナースロボ_タイプT】',
+      desc: 'Vocal: ナースロボ_タイプT / Original: もちうつね',
+      tag: 'Cover',
+      link: 'https://youtu.be/6cUOrYDzHrI',
+      sonohokaOnly: true,
+    },
     {
       no: 1, folder: '01 Shimokita', count: 4, ratio: '3/2',
       title: 'Shimo-Kitazawa Dreaming (...And Unreleased Demos)',
