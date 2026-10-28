@@ -100,31 +100,56 @@
 
   /* ---------- 내용 채우기 ---------- */
   function fill(w) {
-    const no = String(w.no).padStart(2, '0');
+    const no = w.noLabel || String(w.no).padStart(2, '0');
     const [rw, rh] = (w.ratio || '4/3').split('/').map(Number);
     const defaultRatio = rw / rh;
-    slideRatios = w.images.map(() => defaultRatio);
 
-    // 모든 사진을 슬라이드 트랙에 한 번에 배치 (넘길 때 src 교체 깜빡임 원천 차단)
-    track.innerHTML = w.images.map((src, i) =>
-      `<img src="${esc(src)}" alt="${esc(w.title)} — ${i + 1} / ${w.images.length}" draggable="false" />`
-    ).join('');
+    if (w.youtubeId) {
+      slideRatios = [defaultRatio];
+      track.innerHTML = `
+        <div class="tray__video">
+          <iframe
+            id="tray-yt-iframe"
+            src="https://www.youtube.com/embed/${esc(w.youtubeId)}?rel=0&playsinline=1&enablejsapi=1"
+            title="${esc(w.title)}"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen></iframe>
+        </div>`;
+      const ytIframe = document.getElementById('tray-yt-iframe');
+      if (ytIframe) {
+        ytIframe.addEventListener('load', () => {
+          try {
+            ytIframe.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 1 }), '*');
+          } catch (_) { }
+        });
+      }
+      applyStageRatio(defaultRatio, false);
+    } else {
+      slideRatios = w.images.map(() => defaultRatio);
 
-    const imgs = [...track.querySelectorAll('img')];
-    imgs.forEach((im, i) => {
-      const updateR = () => {
-        if (im.naturalWidth && im.naturalHeight) {
-          slideRatios[i] = im.naturalWidth / im.naturalHeight;
-          if (isOpen && work === w && index === i) {
-            applyStageRatio(slideRatios[i], false);
+      // 모든 사진을 슬라이드 트랙에 한 번에 배치 (넘길 때 src 교체 깜빡임 원천 차단)
+      track.innerHTML = w.images.map((src, i) =>
+        `<img src="${esc(src)}" alt="${esc(w.title)} — ${i + 1} / ${w.images.length}" draggable="false" />`
+      ).join('');
+
+      const imgs = [...track.querySelectorAll('img')];
+      imgs.forEach((im, i) => {
+        const updateR = () => {
+          if (im.naturalWidth && im.naturalHeight) {
+            slideRatios[i] = im.naturalWidth / im.naturalHeight;
+            if (isOpen && work === w && index === i) {
+              applyStageRatio(slideRatios[i], false);
+            }
           }
-        }
-      };
-      if (im.complete && im.naturalWidth) updateR();
-      else im.addEventListener('load', updateR, { once: true });
-    });
+        };
+        if (im.complete && im.naturalWidth) updateR();
+        else im.addEventListener('load', updateR, { once: true });
+      });
 
-    applyStageRatio(slideRatios[0], false);
+      applyStageRatio(slideRatios[0], false);
+    }
 
     meta.innerHTML = `<b>No.${no}</b><span>${esc(w.tag)}</span>`;
     head.innerHTML = w.link
@@ -135,7 +160,7 @@
          <span class="tray__bubble" role="status" aria-live="polite">NO Link!</span>`;
     desc.textContent = w.desc || '';
 
-    const many = w.images.length > 1;
+    const many = !w.youtubeId && w.images.length > 1;
     btnPrev.hidden = btnNext.hidden = !many;
     ticks.innerHTML = many
       ? w.images.map((_, i) => `<button type="button" data-i="${i}" aria-label="${i + 1}번째 사진"></button>`).join('')
@@ -186,6 +211,9 @@
 
     fill(w);
     show(0, false);
+    if (w.youtubeId && typeof window.pauseDemoAudio === 'function') {
+      window.pauseDemoAudio();
+    }
 
     tray.hidden = false;
     lockScroll(true);
@@ -238,6 +266,7 @@
     }
 
     tray.hidden = true;
+    track.innerHTML = '';
     [panel, content, backdrop].forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
     content.style.opacity = '';
     card.classList.remove('is-lifted');
@@ -296,6 +325,17 @@
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) (dx < 0 ? next : prev)();
   });
   stage.addEventListener('pointercancel', () => { tracking = false; });
+
+  window.addEventListener('message', (e) => {
+    if (!isOpen || !work || !work.youtubeId || typeof e.data !== 'string') return;
+    try {
+      const data = JSON.parse(e.data);
+      // 유튜브 플레이어가 재생(playerState === 1)되면 우상단 데모 오디오 자동 일시정지
+      if (data && data.event === 'infoDelivery' && data.info && data.info.playerState === 1) {
+        if (typeof window.pauseDemoAudio === 'function') window.pauseDemoAudio();
+      }
+    } catch (_) { }
+  });
 
   window.Tray = { open, close };
 })();
