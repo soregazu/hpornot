@@ -1,13 +1,9 @@
-/* ==========================================================
-   oh.tyn — 사이트 설정
-   콘텐츠/순서/링크는 전부 여기서 바꾸면 됩니다.
-   ========================================================== */
 window.SITE = {
 
   /* 섹션 순서. 빼고 싶은 섹션은 목록에서 지우면 숨겨집니다.
      나중에 works를 별도 페이지로 분리할 경우 'works'를 빼고
      moreWorksHref를 'works.html' 등으로 바꾸면 됩니다. */
-  sectionOrder: ['hero', 'news', 'about', 'works', 'contact'],
+  sectionOrder: ['hero', 'news', 'works', 'about', 'contact'],
   moreWorksHref: '#works',
 
   /* 상단 바 sites 팝업 */
