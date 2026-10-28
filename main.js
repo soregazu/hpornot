@@ -22,15 +22,21 @@
     spotify: '<circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 9.5c3.5-1 7-.6 10 1M7.6 12.6c2.8-.8 5.6-.4 8 .9M8.3 15.5c2.1-.5 4.1-.2 5.9.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
     bandcamp: '<path d="M8.2 6.5h13L15.8 17.5h-13z" fill="currentColor"/>',
     ytmusic: '<circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="5.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.4 9.4v5.2l4.3-2.6z" fill="currentColor"/>',
+    youtube: '<rect x="2.8" y="5.5" width="18.4" height="13" rx="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10.2 9.3v5.4l4.8-2.7z" fill="currentColor"/>',
     instagram: '<rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17" cy="7" r="1.2" fill="currentColor"/>',
   };
   const popup = $('#sites-popup');
-  popup.innerHTML = S.sites.map((s) => `
+  function renderSites(isSonohoka) {
+    if (!popup) return;
+    const list = (isSonohoka && Array.isArray(S.sonohokaSites)) ? S.sonohokaSites : S.sites;
+    popup.innerHTML = list.map((s) => `
     <a class="sites__item" id="site-${s.id}" href="${s.href}" target="_blank" rel="noopener"
        role="menuitem" style="--brand:${s.color}" aria-label="${s.label}">
       <svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[s.id] || ''}</svg>
       <span class="sites__tip">${s.label}</span>
     </a>`).join('');
+  }
+  renderSites(false);
 
   const sitesBtn = $('#nav-sites');
   const setSites = (open) => {
@@ -76,6 +82,8 @@
   const heroLogoBtn = $('#hero-logo-btn');
   const heroLogoImg = $('#hero-logo');
   const aboutLogoImg = $('#about-logo');
+  const aboutNameSub = $('.about__name span');
+  const footerLogoImg = $('.footer img');
   const navAudioWrap = $('#nav-audio-wrap');
   const navAudioBtn = $('#nav-audio');
   const navAudioTip = $('#nav-audio-tip');
@@ -363,6 +371,22 @@
     // immediate가 아닐 때는 지구본이 멈출 때까지 onFrame에서 회전 속도에 비례해 계속 재생 후 멈춤
   }
 
+  window.pauseDemoAudio = () => {
+    if (userPlaying) {
+      userPlaying = false;
+      updateGlobePlaySpeed(false);
+      if (navAudioBtn) {
+        navAudioBtn.classList.remove('is-playing', 'is-scrubbing');
+        navAudioBtn.setAttribute('aria-pressed', 'false');
+      }
+      audioEngaged = false;
+      stopReversePlayback(false);
+      demoAudio.pause();
+      demoAudio.muted = false;
+      demoAudio.volume = masterVol;
+    }
+  };
+
   if (navAudioVol) {
     navAudioVol.addEventListener('input', () => {
       masterVol = Math.max(0, Math.min(1, parseFloat(navAudioVol.value) || 0));
@@ -553,6 +577,7 @@
   };
 
     function applyLogoState(nextState, stage = 1) {
+      const prevState = logoState;
       const isSonohoka = nextState === 'sonohoka';
       const isWaveroad = nextState === 'waveroad';
       if (logoState !== nextState) {
@@ -581,18 +606,38 @@
           aboutLogoImg.classList.add('is-switching');
         }
 
+        if (footerLogoImg) {
+          footerLogoImg.src = src;
+          footerLogoImg.alt = alt;
+        }
+
+        if (aboutNameSub) {
+          aboutNameSub.textContent = isSonohoka ? '| sonoyumeP' : '| Oh Taeyeon';
+        }
+
+        renderSites(isSonohoka);
+
         if (isSonohoka) {
           lastAnnouncedIdx = -1;
           pickRandomDemo();
           if (navAudioWrap) navAudioWrap.hidden = false;
           updateGlobePlaySpeed(userPlaying);
+          setLang('jp', true);
+          updateAboutAction(true);
         } else {
           stopDemoAudio(true);
           if (navAudioWrap) navAudioWrap.hidden = true;
+          if (prevState === 'sonohoka') {
+            setLang('en', true);
+            updateAboutAction(false);
+          }
         }
       }
       document.body.classList.toggle('is-waveroad', isWaveroad);
       document.body.classList.toggle('is-dark', isSonohoka);
+      if (typeof window.relayoutWorks === 'function') {
+        window.relayoutWorks();
+      }
       if (typeof window.setGlobeReverse === 'function') {
         window.setGlobeReverse(isSonohoka);
       }
@@ -638,12 +683,16 @@
       }
     });
 
-    /* ---------- About + 언어 (초기상태: 영어, 순서: EN / KR / JP, 높이는 JP 기준 고정) ---------- */
+    /* ---------- About + 언어 (초기상태: 영어, sonohoka 진입 시: 일어 기본, 높이는 JP 기준 고정) ---------- */
     const langSwitch = $('#lang-switch');
     const aboutText = $('#about-text');
     const moreWorksBtn = $('#more-works');
     const LANG_ATTR = { en: 'en', kr: 'ko', jp: 'ja' };
     let currentLang = 'en';
+
+    function getAboutDict() {
+      return (logoState === 'sonohoka' && S.sonohokaAbout) ? S.sonohokaAbout : S.about;
+    }
 
     function syncAboutHeightToJp() {
       if (!aboutText || !S.about.jp) return;
@@ -663,10 +712,28 @@
       }
     }
 
+    function updateAboutAction(isSonohoka) {
+      if (!moreWorksBtn) return;
+      moreWorksBtn.classList.remove('is-shaking');
+      if (isSonohoka) {
+        moreWorksBtn.innerHTML = 'To Channel <span aria-hidden="true">→</span>';
+        moreWorksBtn.href = 'https://www.youtube.com/@sonoyumeP';
+        moreWorksBtn.target = '_blank';
+        moreWorksBtn.rel = 'noopener';
+      } else {
+        moreWorksBtn.innerHTML = 'More Works <span aria-hidden="true">→</span>';
+        moreWorksBtn.href = S.moreWorksHref || '#works';
+        moreWorksBtn.removeAttribute('target');
+        moreWorksBtn.removeAttribute('rel');
+      }
+    }
+
     function setLang(lang, immediate = false) {
       currentLang = lang;
       const render = () => {
-        aboutText.innerHTML = S.about[lang].map((p) => `<p>${p}</p>`).join('');
+        const dict = getAboutDict();
+        const paragraphs = dict[lang] || S.about[lang] || [];
+        aboutText.innerHTML = paragraphs.map((p) => `<p>${p}</p>`).join('');
         aboutText.lang = LANG_ATTR[lang];
         aboutText.dataset.lang = lang;
         aboutText.classList.remove('is-fading');
@@ -694,9 +761,10 @@
       document.fonts.ready.then(syncAboutHeightToJp).catch(() => { });
     }
 
-    // More Works 버튼: 아직 페이지 구축 전이므로 클릭 시 이동하지 않고 도리도리(흔들림) 연출
+    // 일반 모드 More Works 버튼: 아직 페이지 구축 전이므로 도리도리(흔들림) 연출 / sonohoka 모드: 유튜브 채널로 이동
     if (moreWorksBtn) {
       moreWorksBtn.addEventListener('click', (e) => {
+        if (logoState === 'sonohoka') return;
         e.preventDefault();
         moreWorksBtn.classList.remove('is-shaking');
         void moreWorksBtn.offsetWidth;
@@ -710,23 +778,28 @@
     // 번호가 클수록 최근 작업 → 위로
     const works = [...S.works].sort((a, b) => b.no - a.no).map((w) => ({
       ...w,
-      images: Array.from({ length: w.count || 1 }, (_, k) => `${imgRoot}${w.folder}/${k + 1}.jpg`),
+      images: Array.isArray(w.images) && w.images.length
+        ? w.images
+        : Array.from({ length: w.count || 1 }, (_, k) => `${imgRoot}${w.folder}/${k + 1}.jpg`),
     }));
 
     const grid = $('#works-grid');
     grid.innerHTML = works.map((w, i) => {
-      const no = String(w.no).padStart(2, '0');
+      const no = w.noLabel || String(w.no).padStart(2, '0');
+      const tagBadge = (w.tag === 'Release' || w.tag === 'Cover')
+        ? `♪ ${esc(w.tag.toUpperCase())}`
+        : esc(w.tag.toUpperCase());
       return `
-    <li class="card" id="work-${no}" data-tag="${esc(w.tag)}" style="--ratio:${w.ratio || '4/3'}">
+    <li class="card" id="work-${esc(no)}" data-tag="${esc(w.tag)}"${w.sonohokaOnly ? ' data-sonohoka="true"' : ''} style="--ratio:${w.ratio || '4/3'}">
       <div class="card__inner" role="button" tabindex="0" data-index="${i}" aria-label="${esc(w.title)} — OPEN">
         <div class="card__face card__front">
           ${w.images.length
           ? `<img src="${esc(w.images[0])}" alt="${esc(w.title)}" loading="lazy">`
-          : `<div class="placeholder" data-label="${no}"></div>`}
+          : `<div class="placeholder" data-label="${esc(no)}"></div>`}
           <div class="card__overlay" aria-hidden="true">
             <div class="card__overlay-top">
-              <span class="card__overlay-no">${no}</span>
-              <span class="card__overlay-tag">${w.tag === 'Release' ? '♪ RELEASE' : esc(w.tag.toUpperCase())}</span>
+              <span class="card__overlay-no">${esc(no)}</span>
+              <span class="card__overlay-tag">${tagBadge}</span>
             </div>
             <span class="card__open">OPEN</span>
             <div class="card__overlay-info">
@@ -736,7 +809,7 @@
           </div>
         </div>
         <div class="card__face card__back">
-          <span class="card__no">${no}</span>
+          <span class="card__no">${esc(no)}</span>
           <h3 class="card__title">${esc(w.title)}</h3>
           <p class="card__desc">${esc(w.desc)}</p>
           <span class="card__tag">${esc(w.tag)}</span>
@@ -775,10 +848,10 @@
       });
     });
 
-    // 메이슨리: 카드 높이(비율 기준)만큼 2px 행을 차지하게
+    // 메이슨리: 카드 높이(비율 기준)만큼 2px 행을 차지하게 (숨겨진 카드는 건너뜀)
     const ROW = 2, GAP = 12;
     const layout = () => {
-      const cards = [...grid.querySelectorAll('.card')];
+      const cards = [...grid.querySelectorAll('.card')].filter((card) => getComputedStyle(card).display !== 'none');
       const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
       const heights = Array(cols).fill(0);
       cards.forEach((card) => {
@@ -790,6 +863,7 @@
         heights[c] += span;
       });
     };
+    window.relayoutWorks = layout;
     new ResizeObserver(layout).observe(grid);
     layout();
 
