@@ -211,11 +211,25 @@ body.is-dark .film-grain {
 }
 
 @keyframes grainShift {
-  0% { transform: translate(0, 0); }
-  25% { transform: translate(-2%, 1.5%); }
-  50% { transform: translate(1.5%, -2%); }
-  75% { transform: translate(-1%, -1.5%); }
-  100% { transform: translate(0, 0); }
+  0% {
+    transform: translate(0, 0);
+  }
+
+  25% {
+    transform: translate(-2%, 1.5%);
+  }
+
+  50% {
+    transform: translate(1.5%, -2%);
+  }
+
+  75% {
+    transform: translate(-1%, -1.5%);
+  }
+
+  100% {
+    transform: translate(0, 0);
+  }
 }
 
 /* ---------- 상단 바 데모 오디오 루프 버튼 (sonohoka 전용 + 볼륨) ---------- */
@@ -244,6 +258,7 @@ body.is-dark .film-grain {
     opacity: 0;
     transform: scale(.78) translateY(-2px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -316,8 +331,13 @@ body.is-dark .film-grain {
 }
 
 @keyframes eqBar {
-  0% { height: 3px; }
-  100% { height: 10px; }
+  0% {
+    height: 3px;
+  }
+
+  100% {
+    height: 10px;
+  }
 }
 
 .nav-audio__panel {
@@ -639,13 +659,16 @@ body.is-dark .sites__popup {
     opacity: .35;
     transform: translate(-2.5px, .5px) skewX(-2deg) scale(.97);
   }
+
   35% {
     opacity: .9;
     transform: translate(2px, -.5px) skewX(1.8deg) scale(1.01);
   }
+
   70% {
     transform: translate(-1px, 0) skewX(-.8deg);
   }
+
   100% {
     opacity: 1;
     transform: translate(0, 0) skewX(0) scale(1);
@@ -657,16 +680,20 @@ body.is-dark .sites__popup {
     opacity: .3;
     transform: translate(-4.5px, 1px) skewX(-4deg) scale(.96);
   }
+
   25% {
     opacity: .95;
     transform: translate(4px, -1px) skewX(3.5deg) scale(1.02);
   }
+
   50% {
     transform: translate(-3px, 1px) skewX(-2.5deg);
   }
+
   75% {
     transform: translate(1.5px, -.5px) skewX(1.2deg);
   }
+
   100% {
     opacity: 1;
     transform: translate(0, 0) skewX(0) scale(1);
@@ -715,15 +742,19 @@ body.is-dark .sites__popup {
   0% {
     opacity: 0;
   }
+
   25% {
     opacity: 1;
   }
+
   50% {
     opacity: .12;
   }
+
   75% {
     opacity: .9;
   }
+
   100% {
     opacity: 1;
   }
@@ -750,6 +781,7 @@ body.is-dark .footer img {
     opacity: .25;
     transform: scale(.95);
   }
+
   100% {
     opacity: 1;
     transform: scale(1);
@@ -761,22 +793,28 @@ body.is-dark .footer img {
     opacity: .35;
     transform: translate(0, 0) scale(.96);
   }
+
   16% {
     opacity: .85;
     transform: translate(-5px, 1.5px) skewX(-4deg) scale(1.02);
   }
+
   32% {
     transform: translate(4.5px, -1.5px) skewX(3.5deg) scale(1.01);
   }
+
   48% {
     transform: translate(-3px, 1px) skewX(-2deg);
   }
+
   66% {
     transform: translate(2px, -.5px) skewX(1.2deg);
   }
+
   82% {
     transform: translate(-1px, .5px) skewX(-.5deg);
   }
+
   100% {
     opacity: 1;
     transform: translate(0, 0) skewX(0) scale(1);
@@ -802,6 +840,15 @@ body.is-dark .footer img {
   transform: translateX(-50%);
   height: 1px;
   background: var(--line);
+}
+
+/* sonohoka 모드에서는 News 섹션을 숨기고, 첫 섹션이 된 Works 상단 구분선도 숨김 */
+body.is-dark #news {
+  display: none;
+}
+
+body.is-dark #works>.container::before {
+  display: none;
 }
 
 .section__label {
@@ -1079,15 +1126,15 @@ body.is-dark .placeholder {
   background: var(--paper);
 }
 
-.card__front > img,
-.card__front > .placeholder {
+.card__front>img,
+.card__front>.placeholder {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform .45s var(--ease), filter .35s var(--ease);
 }
 
-.card:hover .card__front > img {
+.card:hover .card__front>img {
   transform: scale(1.03);
 }
 
@@ -1281,6 +1328,51 @@ body.is-waveroad .card[data-tag="Release"] .card__face {
   box-shadow:
     0 0 0 1px rgba(17, 17, 17, .14),
     0 16px 34px -14px rgba(0, 0, 0, .28);
+}
+
+/* sonohoka 전용 카드(01S): 평소에는 숨기고, sonohoka 모드 진입 시에만 등장 + 다른 카드 블러 처리 */
+.card[data-sonohoka="true"] {
+  display: none;
+}
+
+body.is-dark .card[data-sonohoka="true"] {
+  display: block;
+}
+
+body.is-dark .card:not([data-sonohoka="true"]):not(:hover) {
+  opacity: .34;
+  filter: blur(2.6px) saturate(.55);
+  transition: opacity .4s var(--ease), filter .4s var(--ease), transform .22s var(--ease);
+}
+
+body.is-dark .card[data-sonohoka="true"] .card__face {
+  border-color: rgba(242, 242, 240, .62);
+  box-shadow:
+    0 0 0 1px rgba(242, 242, 240, .35),
+    0 0 24px 3px rgba(242, 242, 240, .24),
+    0 0 52px -2px rgba(242, 242, 240, .18),
+    0 18px 38px -12px rgba(0, 0, 0, .72);
+  animation: sonohokaGlow 2.8s ease-in-out infinite alternate;
+}
+
+@keyframes sonohokaGlow {
+  0% {
+    border-color: rgba(242, 242, 240, .42);
+    box-shadow:
+      0 0 0 1px rgba(242, 242, 240, .22),
+      0 0 16px 1px rgba(242, 242, 240, .15),
+      0 0 36px -4px rgba(242, 242, 240, .1),
+      0 18px 38px -12px rgba(0, 0, 0, .7);
+  }
+
+  100% {
+    border-color: rgba(255, 255, 255, .82);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, .48),
+      0 0 30px 5px rgba(242, 242, 240, .34),
+      0 0 62px 4px rgba(242, 242, 240, .22),
+      0 18px 38px -12px rgba(0, 0, 0, .76);
+  }
 }
 
 /* ---------- 카드 클릭 → 트레이 ---------- */
@@ -1488,10 +1580,21 @@ body.is-waveroad .card[data-tag="Release"] .card__face {
 }
 
 @keyframes nudge {
-  20% { transform: translateX(-4px); }
-  45% { transform: translateX(3px); }
-  70% { transform: translateX(-2px); }
-  100% { transform: none; }
+  20% {
+    transform: translateX(-4px);
+  }
+
+  45% {
+    transform: translateX(3px);
+  }
+
+  70% {
+    transform: translateX(-2px);
+  }
+
+  100% {
+    transform: none;
+  }
 }
 
 .tray__desc {
@@ -1544,6 +1647,20 @@ body.is-waveroad .card[data-tag="Release"] .card__face {
   height: 100%;
   object-fit: cover;
   user-select: none;
+  display: block;
+}
+
+.tray__video {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+.tray__video iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
   display: block;
 }
 
@@ -1675,8 +1792,13 @@ body.is-waveroad .card[data-tag="Release"] .card__face {
   transition: background .2s, border-color .2s, color .2s, opacity .25s, transform .2s var(--ease);
 }
 
-.tray__nav--prev { grid-area: prev; }
-.tray__nav--next { grid-area: next; }
+.tray__nav--prev {
+  grid-area: prev;
+}
+
+.tray__nav--next {
+  grid-area: next;
+}
 
 .tray__nav[hidden] {
   display: grid;
@@ -1702,10 +1824,17 @@ body.is-waveroad .card[data-tag="Release"] .card__face {
   color: var(--ink);
 }
 
-.tray__nav--prev:hover svg { transform: translateX(-2px); }
-.tray__nav--next:hover svg { transform: translateX(2px); }
+.tray__nav--prev:hover svg {
+  transform: translateX(-2px);
+}
 
-.tray__nav:active svg { transform: scale(.9); }
+.tray__nav--next:hover svg {
+  transform: translateX(2px);
+}
+
+.tray__nav:active svg {
+  transform: scale(.9);
+}
 
 /* 다크모드(sonohoka) 대응 */
 body.is-dark .tray {
